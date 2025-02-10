@@ -23,21 +23,17 @@ class ProfileController extends Controller
 
         $user = Auth::user();
 
-        // Cek jika ada gambar baru yang diupload
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
             if ($user->gambar) {
                 $gambarLama = "images/{$user->gambar}";
                 if (Storage::disk('public')->exists($gambarLama)) {
-                    Storage::disk('public')->delete($gambarLama); // Menghapus gambar lama
+                    Storage::disk('public')->delete($gambarLama);
                 }
             }
 
-            // Simpan gambar baru dengan nama unik
             $filename = $request->file('gambar')->hashName();
-            $request->file('gambar')->storeAs('images', $filename, 'public'); // Menyimpan gambar baru
+            $request->file('gambar')->storeAs('images', $filename, 'public');
 
-            // Update path gambar di database
             $user->gambar = $filename;
         }
 

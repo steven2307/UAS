@@ -17,7 +17,7 @@ class TampilController extends Controller
             $user = \Auth::user();
 
             $mapels = Mapel::where('id_dosen', $user->id_dosen)->get();
-            $dosen = $user; // Data dosen = user yang sedang login
+            $dosen = $user;
 
             return view("dosen", compact('dosen', 'mapels'));
         }
@@ -54,7 +54,6 @@ class TampilController extends Controller
 
     public function halamanDosen(Request $request, $id_dosen = null)
     {
-        // Pastikan user sudah login
         if (!\Auth::check()) {
             abort(403, 'Akses ditolak. Anda harus login.');
         }
@@ -62,12 +61,11 @@ class TampilController extends Controller
         $user = \Auth::user();
         $userEmail = $user->email;
 
-        // Jika user adalah dosen, ambil mata kuliah sesuai ID dosennya
         if (str_contains($userEmail, '@ibbi.ac.id')) {
             $mapels = Mapel::where('id_dosen', $user->id_dosen)->get();
             $dosen = $user;
         }
-        // Jika user adalah admin, ambil mata kuliah berdasarkan ID dosen yang dipilih
+
         else if (str_contains($userEmail, '@admin.com')) {
             if (!$id_dosen) {
                 return redirect()->route('daftardosen')->with('error', 'Silakan pilih dosen terlebih dahulu.');
@@ -78,7 +76,7 @@ class TampilController extends Controller
             }
             $mapels = Mapel::where('id_dosen', $id_dosen)->get();
         }
-        // Jika bukan admin atau dosen, tolak akses
+
         else {
             abort(403, 'Akses ditolak. Halaman ini hanya untuk dosen dan admin.');
         }
@@ -97,25 +95,21 @@ class TampilController extends Controller
 
     public function lihatNilai($mapelId)
     {
-        // Ambil data mata kuliah yang sesuai dengan mapelId
         $mapel = Mapel::findOrFail($mapelId);
 
-        // Jika yang mengakses adalah admin
         if (\Auth::user()->email && str_contains(\Auth::user()->email, '@admin')) {
-            // Admin dapat melihat nilai semua dosen untuk mapel ini
-            $nilai = Nilai::with('mahasiswa', 'dosen')  // Pastikan mahasiswa dan dosen ikut dimuat
+            $nilai = Nilai::with('mahasiswa', 'dosen')
                 ->where('id_mapel', $mapelId)
                 ->get();
         } else {
-            // Jika yang mengakses adalah dosen, ambil data berdasarkan dosen yang sedang login
+
             $dosen = \Auth::user();
-            $nilai = Nilai::with('mahasiswa') // Hanya mahasiswa karena dosen sudah tahu siapa yang memberikan penilaian
+            $nilai = Nilai::with('mahasiswa')
                 ->where('id_mapel', $mapelId)
                 ->where('id_dosen', $dosen->id)
                 ->get();
         }
 
-        // Konversi setiap nilai individu ke teks sebelum dikirim ke view
         $nilaiFormatted = $nilai->map(function ($n) {
             return [
                 'suasana_kelas' => $this->konversiNilai($n->suasana_kelas),
@@ -123,18 +117,16 @@ class TampilController extends Controller
                 'kualitas_pengajaran' => $this->konversiNilai($n->kualitas_pengajaran),
                 'tugas_penilaian' => $this->konversiNilai($n->tugas_penilaian),
                 'profesionalisme' => $this->konversiNilai($n->profesionalisme),
-                'mahasiswa' => $n->mahasiswa->name, // Menambahkan nama mahasiswa
+                'mahasiswa' => $n->mahasiswa->name,
             ];
         });
 
-        // Menghitung rata-rata untuk setiap kolom penilaian
         $rataSuasanaKelas = $nilai->avg('suasana_kelas');
         $rataWaktuKehadiran = $nilai->avg('waktu_kehadiran');
         $rataKualitasPengajaran = $nilai->avg('kualitas_pengajaran');
         $rataTugasPenilaian = $nilai->avg('tugas_penilaian');
         $rataProfesionalisme = $nilai->avg('profesionalisme');
 
-        // Konversi angka rata-rata ke kategori teks
         $rataSuasanaKelasText = $this->konversiRataRata($rataSuasanaKelas);
         $rataWaktuKehadiranText = $this->konversiRataRata($rataWaktuKehadiran);
         $rataKualitasPengajaranText = $this->konversiRataRata($rataKualitasPengajaran);
@@ -197,35 +189,27 @@ class TampilController extends Controller
             abort(403, 'Akses ditolak. Anda tidak memiliki izin.');
         }
 
-        // Validasi input
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'nomor_induk' => 'required|string|max:20',
-            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048', // Gambar opsional
+            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
-        // Update data tanpa gambar
         $user->update($validated);
 
-        // Cek apakah ada gambar baru
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
             if ($user->gambar) {
                 $gambarLama = "images/{$user->gambar}";
                 if (Storage::disk('public')->exists($gambarLama)) {
-                    Storage::disk('public')->delete($gambarLama); // Menghapus gambar lama
+                    Storage::disk('public')->delete($gambarLama);
                 }
             }
 
-            // Simpan gambar baru dengan nama unik
             $filename = $request->file('gambar')->hashName();
-            $request->file('gambar')->storeAs('images', $filename, 'public'); // Menyimpan gambar baru
-
-            // Update path gambar di database
+            $request->file('gambar')->storeAs('images', $filename, 'public');
             $user->gambar = $filename;
         }
 
-        // Redirect kembali ke halaman edit dosen dengan pesan sukses
         return redirect()->route('dosen.edit', $user->id)->with('success', 'Profil berhasil diperbarui.');
     }
 
@@ -256,13 +240,12 @@ class TampilController extends Controller
             abort(403, 'Akses ditolak. Anda tidak memiliki izin.');
         }
 
-        // Validasi input
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'nomor_induk' => 'required|string|max:20',
-            'semester' => 'required|integer|max:20', // Validasi semester
-            'jurusan' => 'required|string|max:100', // Validasi jurusan
-            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048', // Gambar opsional
+            'semester' => 'required|integer|max:20',
+            'jurusan' => 'required|string|max:100',
+            'gambar' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
         $user->update([
@@ -271,25 +254,20 @@ class TampilController extends Controller
             'semester' => $validated['semester'],
             'jurusan' => $validated['jurusan'],
         ]);
-        // Cek apakah ada gambar baru
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
             if ($user->gambar) {
                 $gambarLama = "images/{$user->gambar}";
                 if (Storage::disk('public')->exists($gambarLama)) {
-                    Storage::disk('public')->delete($gambarLama); // Menghapus gambar lama
+                    Storage::disk('public')->delete($gambarLama);
                 }
             }
 
-            // Simpan gambar baru dengan nama unik
             $filename = $request->file('gambar')->hashName();
-            $request->file('gambar')->storeAs('images', $filename, 'public'); // Menyimpan gambar baru
+            $request->file('gambar')->storeAs('images', $filename, 'public');
 
-            // Update path gambar di database
             $user->gambar = $filename;
         }
 
-        // Redirect kembali ke halaman edit mahasiswa dengan pesan sukses
         return redirect()->route('mahasiswa.edit', $user->id)->with('success', 'Profil berhasil diperbarui.');
     }
 
@@ -300,9 +278,6 @@ class TampilController extends Controller
 
         return redirect()->back()->with('success', 'Mahasiswa berhasil dihapus.');
     }
-
-
-
 
     public function create()
     {
@@ -321,7 +296,6 @@ class TampilController extends Controller
             'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // Upload gambar jika ada
         $gambarPath = null;
         if ($request->hasFile('gambar')) {
             $gambarPath = $request->file('gambar')->store('images', 'public');

@@ -47,8 +47,6 @@
                             </div>
                         </div>
 
-
-
                         <div class="row mb-0 justify-content-center">
                             <div class="col-md-6">
                                 <button type="submit" class="btn btn-success">Simpan</button>

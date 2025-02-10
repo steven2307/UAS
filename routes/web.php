@@ -39,7 +39,6 @@ Route::middleware("auth")->group(function () {
     Route::put('/matkul/update/{id}', [MapelController::class, 'update'])->name('mapel.update');
     Route::delete('/mapel/hapus/{id}', [MapelController::class, 'destroy'])->name('mapel.hapus');
 
-
     Route::get('/nilai/{id}', [NilaiController::class, 'show']);
     Route::post('/nilai/{id}', [NilaiController::class, 'store']);
 });

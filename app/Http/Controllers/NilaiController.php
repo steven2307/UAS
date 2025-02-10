@@ -36,10 +36,8 @@ class NilaiController extends Controller
             'profesionalisme' => 'required',
         ]);
 
-        $mapel = Mapel::find($request->id_mapel);
         $user = Auth::user();
 
-        // Cek apakah user sudah memberikan penilaian sebelumnya
         $existingNilai = Nilai::where('id_mhs', $user->id_mhs)
                               ->where('id_mapel', $request->id_mapel)
                               ->first();

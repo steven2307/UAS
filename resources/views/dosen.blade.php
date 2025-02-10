@@ -56,7 +56,7 @@
                     </thead>
                     <tbody>
                         @php
-                            $mapels = $mapels->sortBy('semester'); // Sorting secara ascending berdasarkan kolom 'semester'
+                            $mapels = $mapels->sortBy('semester');
                         @endphp
 
                         @foreach ($mapels as $mapel)
