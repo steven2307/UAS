@@ -32,11 +32,6 @@
             display: block;
             background-color: aqua;
         }
-
-        .ibbi {
-            width: 60px;
-            height: 60px;
-        }
     </style>
 
     <!-- Scripts -->
